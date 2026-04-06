@@ -152,12 +152,6 @@ The left sidebar tracks terraforming progress in real time. The visualizer panel
 
 ---
 
-## Context & Memory
-
-The narrator context window keeps the 8 most recent messages in full, then relies on rolling summaries for older history. When 12 unsummarized messages accumulate, a second LLM pass (the Archivist) condenses them into a 2–4 sentence factual summary, which is stored and injected into future prompts. This allows the game to run indefinitely without hitting token limits while preserving meaningful long-term continuity.
-
----
-
 ## Game State
 
 The narrator emits structured tags at the end of each response. The backend parses these and updates Supabase. All values are whole numbers clamped 0–100 (except mission year, which increments freely).
