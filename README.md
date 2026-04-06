@@ -1,6 +1,6 @@
 # Obsidia
 
-A slow, atmospheric text-based game about terraforming a dead planet over 300 years. You play as Ren, an android left alone with a small companion robot named Bloop, a hub full of machinery, and three centuries of work ahead of you. The world is narrated by an omniscient voice called Obsidia, which witnesses and describes — it never speaks for Ren, never editorializes, never reassures.
+A slow, atmospheric text-based game about terraforming a dead planet over 300 years. You play as Ren, an android left alone with a small companion robot named Bloop, a hub full of machinery, and three centuries of work ahead of you.
 
 ## Plot
 There is no story in the traditional sense. There is a planet, and there is work, and there is time.
