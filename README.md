@@ -2,6 +2,27 @@
 
 A slow, atmospheric text-based game about terraforming a dead planet over 300 years. You play as Ren, an android left alone with a small companion robot named Bloop, a hub full of machinery, and three centuries of work ahead of you. The world is narrated by an omniscient voice called Obsidia, which witnesses and describes — it never speaks for Ren, never editorializes, never reassures.
 
+## Plot
+There is no story in the traditional sense. There is a planet, and there is work, and there is time.
+
+Ren arrives alone. The atmosphere is thin and hostile. The ground is rust-colored rock. Nothing grows. The machines begin running immediately — atmospheric processors bolted into the mountain slopes, seismic thumpers driving heat from below — and Ren tends them. That is the mission. That is most of what the next 300 years will be.
+
+Bloop is there too. A utility robot, six-legged, built for terrain mapping, repurposed long ago into something closer to companionship. Bloop doesn't speak. Bloop follows.
+
+Progress is slow enough to be almost invisible. Years pass in the space of a few turns. The sky changes tone over decades. Instruments register shifts that eyes cannot see. Then one day there is something faintly green on the crater floor, and it is one of the most significant things that has ever happened on this planet.
+
+The VR archive in the hub lets Ren step into historical simulations — ancient civilizations, catastrophes, ordinary lives — and live inside them for what feels like years. The longer Ren stays, the harder it becomes to tell the difference between the simulation and the planet outside. Coherence drifts. Reality becomes a matter of attention.
+
+There is no ending. The 300-year mission is a horizon, not a finish line. What the game is really about is what it means to do slow, necessary work alone, across a span of time longer than any individual life — and what that does to the mind doing it.
+
+---
+
+## Screenshots 
+
+<img width="2560" height="1440" alt="Screenshot 2026-04-06 150739" src="https://github.com/user-attachments/assets/6bbc14ca-6824-4b82-8ac4-dc1f869406d6" />
+
+<img width="1366" height="768" alt="Screenshot 2026-04-06 153725" src="https://github.com/user-attachments/assets/f9e4dda1-eda4-46ed-8915-557357a38b3b" />
+
 ---
 
 ## What It Is
@@ -12,11 +33,28 @@ The game supports procedural image generation: during meaningful moments, the na
 
 ---
 
-## Screenshots 
+## Terraforming Stages
 
-<img width="2560" height="1440" alt="Screenshot 2026-04-06 150739" src="https://github.com/user-attachments/assets/6bbc14ca-6824-4b82-8ac4-dc1f869406d6" />
+The narrator's tone and Bloop's behavior evolve automatically as the planet changes. There are six stages driven by the TERRA_SYNC values:
 
-<img width="1366" height="768" alt="Screenshot 2026-04-06 153725" src="https://github.com/user-attachments/assets/f9e4dda1-eda4-46ed-8915-557357a38b3b" />
+1. **Sterile World** — Dust, scale, and oppressive monotony.
+2. **Chemical Seeding** — Invisible change. Instruments detect what eyes cannot.
+3. **Microbial Life** — The first living things, boring and extraordinary.
+4. **Instability** — The planet resists. Storms, die-offs, reversals.
+5. **Growth** — Moss, lichen, color where there was none.
+6. **Early Ecosystem** — Water cycles. Weather. The planet continuing on its own.
+
+---
+
+## Special Mechanics
+
+**Planetary Travel** — Ren can use the orbital lander as a sub-orbital hopper to reach remote sites. Journeys emphasize scale and isolation.
+
+**VR Historical Archive** — Ren can enter the ship's VR archive and live entire simulated lifetimes in historical eras. Extended immersion increases Coherence drift (C%), which at high levels begins to blur the boundary between simulation and present.
+
+**SFX** — The narrator emits `[SFX]` tags for significant audible events. These are processed by a Tone.js synthesizer engine in the frontend using three synth types: FMSynth (crystalline, high-frequency), MonoSynth (deep, tectonic), and NoiseSynth (wind, mechanical noise).
+
+**SIGNAL** — Each narrator response includes a `[SIGNAL]` tag: a single quiet observation from the environment. Rendered as a highlighted aside in the scroll.
 
 ---
 
@@ -163,42 +201,3 @@ The narrator emits structured tags at the end of each response. The backend pars
 | `MISSION_LOG` | Y | Mission year elapsed — cumulative |
 
 The frontend syncs state from `/api/state` after every turn and animates the sidebar bars accordingly.
-
----
-
-## Terraforming Stages
-
-The narrator's tone and Bloop's behavior evolve automatically as the planet changes. There are six stages driven by the TERRA_SYNC values:
-
-1. **Sterile World** — Dust, scale, and oppressive monotony.
-2. **Chemical Seeding** — Invisible change. Instruments detect what eyes cannot.
-3. **Microbial Life** — The first living things, boring and extraordinary.
-4. **Instability** — The planet resists. Storms, die-offs, reversals.
-5. **Growth** — Moss, lichen, color where there was none.
-6. **Early Ecosystem** — Water cycles. Weather. The planet continuing on its own.
-
----
-
-## Special Mechanics
-
-**Planetary Travel** — Ren can use the orbital lander as a sub-orbital hopper to reach remote sites. Journeys emphasize scale and isolation.
-
-**VR Historical Archive** — Ren can enter the ship's VR archive and live entire simulated lifetimes in historical eras. Extended immersion increases Coherence drift (C%), which at high levels begins to blur the boundary between simulation and present.
-
-**SFX** — The narrator emits `[SFX]` tags for significant audible events. These are processed by a Tone.js synthesizer engine in the frontend using three synth types: FMSynth (crystalline, high-frequency), MonoSynth (deep, tectonic), and NoiseSynth (wind, mechanical noise).
-
-**SIGNAL** — Each narrator response includes a `[SIGNAL]` tag: a single quiet observation from the environment. Rendered as a highlighted aside in the scroll.
-
----
-
-## Save & Load
-
-Use the browser's save/load controls (if wired to your instance) to export a full snapshot of game state and message history as a `.json` file. Loading a save re-renders the entire scroll and restores the sidebar.
-
----
-
-## Notes
-
-- The game starts fresh automatically if no messages exist in Supabase — it runs a silent `Look around.` action to generate the opening scene.
-- The `PAINTER_MODEL` (`imagen-4.0-fast-generate-001`) requires specific API access. If you get a permission error, check that your key has image generation enabled or substitute a different Imagen model string.
-- Resetting state via `/api/reset_state` does not clear the message log. To fully restart, truncate the `obsidia` and `summaries` tables in Supabase directly.
