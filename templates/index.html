@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Scroll of Obsidia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+<style>
+    :root {
+        --bg-color: #050508;
+        --panel-bg: rgba(15, 15, 20, 0.8);
+        --text-main: #d1d1e0;
+        --text-muted: #6b6b80;
+        --accent-ren: #4da6ff;
+        --accent-sofia: #ff9933;
+        --accent-obsidia: #b366ff;
+        --accent-speak: #e8c97a;
+        --border-glow: 0 0 10px rgba(179, 102, 255, 0.2);
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        background-color: var(--bg-color);
+        background-image: radial-gradient(circle at 50% 0%, #1a1025 0%, #050508 60%);
+        color: var(--text-main);
+        font-family: 'Space Mono', monospace;
+        height: 100vh;
+        display: flex;
+        overflow: hidden;
+    }
+
+    /* Layout */
+    #app {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        width: 100%;
+        height: 100%;
+    }
+
+    /* Left Sidebar - State Tracking */
+    #sidebar {
+        background: var(--panel-bg);
+        border-right: 1px solid rgba(179, 102, 255, 0.3);
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+        overflow-y: auto;
+        box-shadow: var(--border-glow);
+    }
+
+    .stat-group h3 {
+        font-family: 'Cinzel', serif;
+        color: var(--accent-obsidia);
+        font-size: 14px;
+        letter-spacing: 2px;
+        border-bottom: 1px solid rgba(179, 102, 255, 0.3);
+        padding-bottom: 5px;
+        margin-bottom: 15px;
+        margin-top: 0;
+    }
+
+    .stat { margin-bottom: 12px; font-size: 11px; }
+    .stat-header { display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-muted); }
+    .bar-container { width: 100%; height: 4px; background: #1a1a24; border-radius: 2px; overflow: hidden; }
+    .bar-fill { height: 100%; background: var(--accent-obsidia); transition: width 1s ease-in-out; }
+    .bar-fill.ren { background: var(--accent-ren); }
+    .bar-fill.sofia { background: var(--accent-sofia); }
+
+    /* Main Story Area */
+    #main-view { display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; position: relative; }
+
+    /* Visualizer (Top Half) */
+    #visualizer {
+        height: 50%;
+        flex-shrink: 0;
+        background: transparent; /* Allows purple background to show on sides */
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-bottom: 1px solid rgba(179, 102, 255, 0.3); /* Subtle data-line border */
+        box-shadow: 0 4px 10px rgba(179, 102, 255, 0.1);
+    }
+
+    #visualizer img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Forces full image to show without cropping */
+        opacity: 0.6;
+        transition: opacity 2s ease;
+    }
+
+    .visualizer-overlay { position: absolute; bottom: 10px; left: 20px; font-size: 11px; color: var(--accent-obsidia); text-shadow: 0 0 5px #000; }
+    #painter-status { position: absolute; font-family: 'Cinzel', serif; letter-spacing: 4px; color: var(--text-main); animation: pulse 2s infinite; display: none; }
+
+    /* Narrative Scroll (Middle) */
+    #narrative-scroll {
+        flex-grow: 1;
+        min-height: 0;
+        padding: 30px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+    }
+
+    .message { line-height: 1.8; opacity: 0; transform: translateY(10px); animation: fadeIn 0.5s forwards; }
+    
+    .message.obsidia { font-family: 'Cinzel', serif; font-size: 16px; color: #fff; }
+    .message.thought { font-style: italic; color: var(--accent-sofia); opacity: 0.8; }
+
+    /* Player input tags */
+    .sys-tag {
+        font-family: 'Space Mono', monospace;
+        font-size: 12px;
+        letter-spacing: 0.5px;
+        margin: 18px 0 6px 0;
+        opacity: 0;
+        animation: fadeIn 0.4s forwards;
+    }
+    .ren-action {
+        color: var(--accent-ren);
+        border-left: 2px solid rgba(77, 166, 255, 0.4);
+        padding: 4px 10px;
+    }
+    .ren-dialog {
+        color: var(--accent-speak);
+        border-left: 2px solid rgba(232, 201, 122, 0.4);
+        padding: 4px 10px;
+    }
+    .sofia-action {
+        color: var(--accent-sofia);
+        border-left: 2px solid rgba(255, 153, 51, 0.4);
+        padding: 4px 10px;
+    }
+    .sofia-dialog {
+        color: var(--accent-speak);
+        border-left: 2px solid rgba(232, 201, 122, 0.4);
+        padding: 4px 10px;
+    }
+    .system-status {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-style: italic;
+    }
+    
+    .signal-tag {
+        display: block;
+        font-family: 'Space Mono', monospace;
+        font-size: 11px;
+        font-style: italic;
+        color: #c8a84b;
+        border-left: 2px solid #c8a84b;
+        padding: 6px 12px; /* Horizontal breathing room */
+        margin: 12px 0;    /* Vertical separation from text */
+        opacity: 0.85;
+    }
+
+    /* Input Controls (Bottom) */
+    #controls {
+        padding: 20px;
+        background: var(--panel-bg);
+        border-top: 1px solid rgba(179, 102, 255, 0.3);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .input-group.ren {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .label-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .label-row label { 
+        color: var(--accent-ren); 
+        font-size: 10px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin: 0;
+    }
+
+    .input-row {
+        display: flex;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    textarea {
+        flex-grow: 1;
+        height: 50px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(77, 166, 255, 0.2);
+        color: var(--text-main);
+        font-family: 'Space Mono', monospace;
+        font-size: 12px;
+        padding: 10px;
+        resize: none;
+        box-sizing: border-box;
+        transition: border-color 0.3s;
+    }
+
+    textarea:focus { outline: none; border-color: var(--accent-ren); }
+
+    .ai-status { font-size: 10px; color: var(--accent-obsidia); display: flex; align-items: center; gap: 8px; }
+    .status-dot { width: 8px; height: 8px; background-color: var(--accent-obsidia); border-radius: 50%; animation: pulse 2s infinite; }
+
+    #btn-submit {
+        height: 50px;
+        background: transparent;
+        border: 1px solid var(--accent-ren);
+        color: var(--accent-ren);
+        font-family: 'Cinzel', serif;
+        font-size: 13px;
+        letter-spacing: 1px;
+        cursor: pointer;
+        padding: 0 28px;
+        transition: all 0.3s;
+        white-space: nowrap;
+    }
+
+    #btn-submit:hover {
+        background: rgba(77, 166, 255, 0.1);
+        box-shadow: 0 0 10px rgba(77, 166, 255, 0.2);
+    }
+
+    #btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Animations & Scrollbar */
+    @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 0.5; box-shadow: 0 0 0px transparent; } 50% { opacity: 1; box-shadow: 0 0 5px var(--accent-obsidia); } }
+    
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(179, 102, 255, 0.3); border-radius: 3px; }
+
+    /* Other Utility Classes */
+    #sfx-indicator {
+        display: none;
+        font-family: 'Space Mono', monospace;
+        font-size: 10px;
+        color: #c8a84b;
+        letter-spacing: 1px;
+        padding: 4px 0;
+    }
+    #sfx-indicator.active { display: flex; align-items: center; gap: 6px; animation: sfxFade 1.5s ease-out forwards; }
+    .sfx-dot { width: 6px; height: 6px; background: #c8a84b; border-radius: 50%; }
+
+    .tts-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .tts-label { font-size: 11px; color: var(--text-muted); }
+    .tts-btn {
+        background: transparent;
+        border: 1px solid rgba(179, 102, 255, 0.3);
+        color: var(--text-muted);
+        font-family: 'Space Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        padding: 3px 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .tts-btn.active { border-color: var(--accent-obsidia); color: var(--accent-obsidia); box-shadow: 0 0 8px rgba(179, 102, 255, 0.2); }
+    .tts-speaking { display: flex; align-items: center; gap: 6px; font-size: 10px; color: var(--accent-obsidia); letter-spacing: 1px; }
+    .tts-dot { width: 6px; height: 6px; background: var(--accent-obsidia); border-radius: 50%; animation: pulse 1.2s infinite; }
+
+    /* No-images toggle — mirrors TTS button style */
+    #img-toggle { border-color: rgba(77, 166, 255, 0.4); color: var(--text-muted); }
+    #img-toggle.active { border-color: #ff4444; color: #ff6666; box-shadow: 0 0 8px rgba(255, 60, 60, 0.2); }
+
+    /* Modal & View Full Button */
+.visual-action-btn {
+    position: absolute;
+    bottom: 10px;
+    right: 20px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(179, 102, 255, 0.4);
+    color: var(--accent-obsidia);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    padding: 4px 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: all 0.3s;
+    z-index: 5;
+}
+
+.visual-action-btn:hover {
+    background: rgba(179, 102, 255, 0.2);
+    border-color: var(--accent-obsidia);
+    box-shadow: 0 0 8px rgba(179, 102, 255, 0.3);
+}
+
+.modal {
+    display: none; 
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(5, 5, 8, 0.95);
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    margin: auto;
+    display: block;
+    max-width: 95%;
+    max-height: 95%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgba(179, 102, 255, 0.3);
+    object-fit: contain; /* The modal forces the full image to show */
+}
+
+.close-modal {
+    position: absolute;
+    top: 20px;
+    right: 35px;
+    color: var(--accent-obsidia);
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+    <div id="sidebar">
+        <div class="stat-group">
+            <h3>TERRA_SYNC</h3>
+            <div class="stat"><div class="stat-header"><span>Atmosphere (A)</span><span id="val-A">2%</span></div><div class="bar-container"><div class="bar-fill" id="bar-A" style="width: 2%"></div></div></div>
+            <div class="stat"><div class="stat-header"><span>Temperature (T)</span><span id="val-T">14%</span></div><div class="bar-container"><div class="bar-fill" id="bar-T" style="width: 14%"></div></div></div>
+            <div class="stat"><div class="stat-header"><span>Water Cycle (W)</span><span id="val-W">0%</span></div><div class="bar-container"><div class="bar-fill" id="bar-W" style="width: 0%"></div></div></div>
+            <div class="stat"><div class="stat-header"><span>Flora Seeding (F)</span><span id="val-F">0%</span></div><div class="bar-container"><div class="bar-fill" id="bar-F" style="width: 0%"></div></div></div>
+            <div class="stat"><div class="stat-header"><span>Stability (S)</span><span id="val-S">8%</span></div><div class="bar-container"><div class="bar-fill" id="bar-S" style="width: 8%"></div></div></div>
+        </div>
+
+        <div class="stat-group">
+            <h3>SYS_INT_COH</h3>
+            <div class="stat"><div class="stat-header"><span>Integrity</span><span id="val-BI">96%</span></div><div class="bar-container"><div class="bar-fill ren" id="bar-BI" style="width: 96%"></div></div></div>
+            <div class="stat"><div class="stat-header"><span>Coherence</span><span id="val-BC">89%</span></div><div class="bar-container"><div class="bar-fill ren" id="bar-BC" style="width: 89%"></div></div></div>
+        </div>
+<div class="stat-group">
+    <h3>LOG</h3>
+    <div class="stat">
+        <div class="stat-header"><span>Mission Clock</span><span id="val-Y">Year 0</span></div>
+        <div class="bar-container"><div class="bar-fill" id="bar-Y" style="width: 5.7%"></div></div>
+    </div>
+    </div>
+    <div id="sfx-indicator"><div class="sfx-dot"></div>▶ SFX</div>
+
+    <div class="stat-group">
+        <h3>AUDIO</h3>
+        <div class="tts-row">
+            <span class="tts-label">Narration Voice</span>
+            <button id="tts-toggle" class="tts-btn" onclick="toggleTTS()" title="Toggle narration TTS">
+                <span id="tts-icon">○</span> OFF
+            </button>
+        </div>
+        <div id="tts-speaking" class="tts-speaking" style="display:none;">
+            <span class="tts-dot"></span> SPEAKING
+        </div>
+        <div class="tts-row" style="margin-top: 10px;">
+            <span class="tts-label">No Images</span>
+            <button id="img-toggle" class="tts-btn" onclick="toggleImages()" title="Disable image generation">
+                <span id="img-icon">○</span> OFF
+            </button>
+        </div>
+    </div>
+</div>
+    <div id="main-view">
+        <div id="visualizer">
+            <div id="painter-status">MANIFESTING ECHO...</div>
+            <img id="scene-image" src="..." alt="Obsidia Atmosphere">
+            <div class="visualizer-overlay" id="scene-desc">CURRENT SCENE: SYSTEM INITIALIZATION</div>
+            <button class="visual-action-btn" onclick="openModal()">⤢ VIEW FULL</button>
+        </div>
+        <div id="narrative-scroll">
+            <div class="message obsidia" style="text-align: center; color: var(--accent-obsidia); font-size: 24px;">
+                TALES OF OBSIDIA
+            </div>
+            <div class="message obsidia">
+            </div>
+        </div>
+
+        <div id="controls">
+            <div class="input-group ren">
+                <div class="label-row">
+                    <label style="margin: 0;">UNIT: REN [CONSOLE]</label>
+                    <div class="ai-status">
+                        <div class="status-dot"></div>
+                        <span id="ai-status-text">OBSIDIA: WITNESSING</span>
+                    </div>
+                </div>
+
+                <div class="input-row">
+                    <textarea id="ren-input" placeholder="Describe an action..."></textarea>
+                    <button id="btn-submit" onclick="submitTurn()">TRANSMIT</button>
+                </div>
+            </div>
+     </div>
+</div>
+
+<script>
+    // --- FLASK BACKEND URL ---
+    const API_BASE = "http://127.0.0.1:8080";
+
+    // --- STATE MANAGEMENT ---
+    let gameState = {
+        TERRA: { A: 2, T: 14, W: 0, F: 0, S: 8 },
+        SYS: { BI: 96, BC: 89 },
+        REL: { Y: 0, D: 0 }
+    };
+
+async function loadHistory() {
+        try {
+            const res = await fetch(`${API_BASE}/api/history`);
+            const data = await res.json();
+            
+            // 1. Check if the game is brand new (no messages yet)
+            if (!data.messages || data.messages.length === 0) {
+                silentStart();
+                return; // Exit here so we don't try to scroll an empty list
+            }
+
+            const scroll = document.getElementById('narrative-scroll');
+            
+            // Disable animation for bulk load and keep messages visible
+            const style = document.createElement('style');
+            style.innerHTML = '.message { animation: none !important; opacity: 1 !important; transform: none !important; }';
+            document.head.appendChild(style);
+
+            // 2. Render existing messages
+            for (let msg of data.messages) {
+                renderMessage(msg);
+            }
+
+            // Force all rendered messages to stay visible before removing override
+            scroll.querySelectorAll('.message').forEach(el => {
+                el.style.opacity = '1';
+                el.style.transform = 'none';
+            });
+            style.remove();
+            scroll.scrollTop = scroll.scrollHeight;
+        } catch(e) {
+            console.warn('Could not load history.', e);
+        }
+    }
+
+    async function loadGameState() {
+        try {
+            const res = await fetch(`${API_BASE}/api/state`);
+            const data = await res.json();
+            if (data.TERRA) {
+                gameState.TERRA = data.TERRA;
+                gameState.SYS = data.SYS;
+                gameState.REL = data.REL;
+                updateUI();
+            }
+        } catch(e) {
+            console.warn('Could not load game state, using defaults.', e);
+        }
+    }
+
+    // Load state first so sidebar is correct, then render history
+    loadGameState().then(() => loadHistory());
+
+    function updateUI() {
+        const updateBar = (id, val) => {
+            let clamped = Math.max(0, Math.min(100, val));
+            const bar = document.getElementById(`bar-${id}`);
+            if(bar) bar.style.width = `${clamped}%`;
+            
+            let textElem = document.getElementById(`val-${id}`);
+            if(textElem) {
+                textElem.innerText = `${Math.round(val)}%`;
+            }
+        };
+
+        ['A','T','W','F','S'].forEach(k => updateBar(k, gameState.TERRA[k]));
+        ['BI','BC'].forEach(k => updateBar(k, gameState.SYS[k]));
+        updateBar('D', gameState.REL.D);
+
+        // Year: display text separately, normalize bar to 300-year scale
+        const yearEl = document.getElementById('val-Y');
+        if (yearEl) yearEl.innerText = `Year ${Math.round(gameState.REL.Y)}`;
+        const yearBar = document.getElementById('bar-Y');
+        if (yearBar) yearBar.style.width = `${Math.min(100, (gameState.REL.Y / 300) * 100)}%`;
+    }
+
+    // --- PARSERS ---
+    // NOTE: State mutation is handled server-side. This function only cleans tags
+    // from display text and renders the SIGNAL tag. gameState is synced from
+    // /api/state after each turn via syncStateFromServer().
+    function parseStateTags(text) {
+        // Extract and render SIGNAL separately (keeps narrative flavor visible)
+        text = text.replace(/\[SIGNAL:\s*(.+?)\]/g, '<div class="signal-tag">⬡ $1</div>');
+
+        // Remove all remaining state tags AND their trailing line breaks
+        return text.replace(/\[[A-Z_]+:.*?\]\n*/g, '').trim();
+    }
+
+    async function syncStateFromServer() {
+        try {
+            const res = await fetch(`${API_BASE}/api/state`);
+            const data = await res.json();
+            if (data.TERRA) {
+                gameState.TERRA = data.TERRA;
+                gameState.SYS = data.SYS;
+                gameState.REL = data.REL;
+                updateUI();
+            }
+        } catch(e) {
+            console.warn('Could not sync game state from server.', e);
+        }
+    }
+
+    function triggerImageGeneration(imageUrl, promptText) {
+        if (imagesDisabled) return;
+        const imgEl = document.getElementById('scene-image');
+        const statusEl = document.getElementById('painter-status');
+        const descEl = document.getElementById('scene-desc');
+        
+        imgEl.style.opacity = '0';
+        statusEl.style.display = 'block';
+        descEl.innerText = `GENERATING VISUAL DATA...`;
+
+        imgEl.src = imageUrl;
+        imgEl.onload = () => {
+            statusEl.style.display = 'none';
+            imgEl.style.opacity = '0.6';
+            descEl.innerText = 'VISUAL DATA CONFIRMED';
+        };
+    }
+
+    // --- RENDER CHAT ---
+    function renderMessage(msg) {
+        if (msg.type === 'action' && msg.character === 'System') return;
+
+        const scroll = document.getElementById('narrative-scroll');
+        const msgDiv = document.createElement('div');
+
+        if (msg.type === 'narrator') {
+            msgDiv.className = 'message obsidia';
+            const cleaned = parseSFXTags(msg.text);
+            const withTags = parseStateTags(cleaned);
+            const formatted = withTags.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            msgDiv.innerHTML = formatted;
+            ttsSpeak(withTags);
+        } 
+        else if (msg.type === 'thought') {
+            msgDiv.className = 'message thought';
+            msgDiv.innerText = msg.text;
+        }
+        else if (msg.type === 'action') {
+            const isRen = msg.character.toLowerCase() === 'ren';
+            msgDiv.className = `sys-tag ${isRen ? 'ren-action' : 'sofia-action'}`;
+            msgDiv.innerText = `[${msg.character.toUpperCase()}] ${msg.text}`;
+            msgDiv.style.display = 'block';
+        }
+        else if (msg.type === 'dialog') {
+            const isRen = msg.character.toLowerCase() === 'ren';
+            msgDiv.className = `sys-tag ${isRen ? 'ren-dialog' : 'sofia-dialog'}`;
+            const cleanText = msg.text.replace(/^[""]|[""]$/g, '').trim();
+            msgDiv.innerText = `${msg.character.toUpperCase()}: "${cleanText}"`;
+            msgDiv.style.display = 'block';
+        }
+        else if (msg.type === 'photo') {
+            msgDiv.className = 'sys-tag system-status';
+            //msgDiv.innerText = `[PAINTER_API]: Processing visual request from ${msg.character}...`;
+            msgDiv.style.display = 'block';
+            if (msg.image_url) triggerImageGeneration(msg.image_url, msg.text);
+        }
+        else {
+            // Meta tags (remember, think, reflect)
+            msgDiv.className = 'sys-tag system-status';
+            msgDiv.innerText = `[SYSTEM LOG]: ${msg.type} executed by ${msg.character}`;
+            msgDiv.style.display = 'block';
+        }
+
+        scroll.appendChild(msgDiv);
+        setTimeout(() => scroll.scrollTop = scroll.scrollHeight, 50);
+    }
+
+    async function silentStart() {
+        const aiStatusText = document.getElementById('ai-status-text');
+        aiStatusText.innerText = "OBSIDIA: INITIALIZING SCENE...";
+        
+        try {
+            // Send the silent action to the backend
+            const response = await fetch(`${API_BASE}/api/action`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                // Use 'System' as the character so our renderMessage function knows to hide it
+                body: JSON.stringify({ character: 'System', text: 'Look around.' })
+            });
+
+            if (!response.ok) throw new Error("Silent start failed.");
+            
+            const data = await response.json();
+            
+            // Render the AI's response (but the System action will be hidden by Step 1)
+            for (let msg of data.messages) {
+                renderMessage(msg);
+            }
+
+            await syncStateFromServer();
+        } catch (error) {
+            console.error(error);
+        } finally {
+            aiStatusText.innerText = "OBSIDIA: WITNESSING";
+        }
+    }
+
+    // --- MAIN API CALL ---
+    async function submitTurn() {
+        const inputEl = document.getElementById('ren-input');
+        const submitBtn = document.getElementById('btn-submit');
+        const aiStatusText = document.getElementById('ai-status-text');
+
+        let text = inputEl.value.trim();
+        if (!text) return;
+
+        // Auto-detect dialogue vs action based on quotes
+        const isDialog = text.startsWith('"') || text.startsWith("'");
+        const inputType = isDialog ? 'dialog' : 'action';
+        
+        // Strip the wrapping quotes if it is pure dialog so the backend doesn't double-quote it
+        if (isDialog && (text.endsWith('"') || text.endsWith("'"))) {
+            text = text.substring(1, text.length - 1);
+        }
+
+        // UI Disable
+        submitBtn.disabled = true;
+        inputEl.disabled = true;
+        aiStatusText.innerText = "OBSIDIA: PROCESSING...";
+
+        // Echo player command locally immediately
+        renderMessage({ type: inputType, character: 'Ren', text: text });
+        inputEl.value = '';
+
+        try {
+            const endpoint = inputType === 'action' ? '/api/action' : '/api/dialog';
+            
+            const response = await fetch(`${API_BASE}${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ character: 'Ren', text: text })
+            });
+
+            if (!response.ok) throw new Error("Server communication failed.");
+            
+            const data = await response.json();
+            const newMessages = data.messages.slice(1);
+            
+            for (let msg of newMessages) {
+                renderMessage(msg);
+            }
+
+            await syncStateFromServer();
+
+        } catch (error) {
+            console.error(error);
+            renderMessage({ type: 'system-error', character: 'System', text: "Error connecting to Obsidia mainframe." });
+        } finally {
+            submitBtn.disabled = false;
+            inputEl.disabled = false;
+            aiStatusText.innerText = "OBSIDIA: WITNESSING";
+            inputEl.focus();
+        }
+    }
+
+    // ── SFX ENGINE ──────────────────────────────────────────────────────────────
+
+    let toneStarted = false;
+
+    async function ensureTone() {
+        if (!toneStarted) {
+            await Tone.start();
+            toneStarted = true;
+        }
+    }
+
+    const sfxSynths = {};
+
+    function buildSynth(type) {
+        if (type === 'FMSynth') {
+            const reverb = new Tone.Reverb({ decay: 8, wet: 0.9 }).toDestination();
+            const synth = new Tone.FMSynth({
+                harmonicity: 3, modulationIndex: 10,
+                envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 2 },
+                modulationEnvelope: { attack: 0.01, decay: 0.5, sustain: 0.2, release: 2 },
+                volume: -18
+            }).connect(reverb);
+            return synth;
+        }
+        if (type === 'MonoSynth') {
+            const reverb = new Tone.Reverb({ decay: 6, wet: 0.6 }).toDestination();
+            const synth = new Tone.MonoSynth({
+                oscillator: { type: 'sawtooth' },
+                envelope: { attack: 1.2, decay: 0.5, sustain: 0.8, release: 3 },
+                filterEnvelope: { attack: 1.5, decay: 1, sustain: 0.5, release: 3, baseFrequency: 40, octaves: 2 },
+                volume: -14
+            }).connect(reverb);
+            return synth;
+        }
+        if (type === 'NoiseSynth') {
+            const reverb = new Tone.Reverb({ decay: 4, wet: 0.5 }).toDestination();
+            const synth = new Tone.NoiseSynth({
+                noise: { type: 'brown' },
+                envelope: { attack: 0.5, decay: 0.2, sustain: 1.0, release: 2 },
+                volume: -20
+            }).connect(reverb);
+            return synth;
+        }
+        return null;
+    }
+
+    function getSynth(type) {
+        if (!sfxSynths[type]) sfxSynths[type] = buildSynth(type);
+        return sfxSynths[type];
+    }
+
+    async function playSFX(type, params) {
+        await ensureTone();
+        const synth = getSynth(type);
+        if (!synth) return;
+
+        // Flash indicator
+        const ind = document.getElementById('sfx-indicator');
+        ind.textContent = '';
+        const dot = document.createElement('div');
+        dot.className = 'sfx-dot';
+        ind.appendChild(dot);
+        ind.appendChild(document.createTextNode(` ▶ ${type}`));
+        ind.className = 'active';
+        setTimeout(() => { ind.className = ''; }, 1500);
+
+        try {
+            synth.set({ detune: params.detune || 0 });
+            const decay = params.decay || 1;
+            if (type === 'FMSynth' || type === 'MonoSynth') {
+                const note = params.freq ? params.freq : (type === 'FMSynth' ? 'C5' : 'C1');
+                synth.triggerAttackRelease(note, decay + 'n');
+            } else if (type === 'NoiseSynth') {
+                synth.triggerAttackRelease(decay + 'n');
+            }
+        } catch(e) {
+            console.warn('SFX error:', e);
+        }
+    }
+
+    function parseSFXTags(text) {
+        const sfxRegex = /\[SFX:\s*[^|]+\|\s*(\{[^}]+\})\]/g;
+        let match;
+        while ((match = sfxRegex.exec(text)) !== null) {
+            try {
+                const params = JSON.parse(match[1]);
+                if (params.synth) playSFX(params.synth, params);
+            } catch(e) {
+                console.warn('SFX parse error:', e, match[1]);
+            }
+        }
+        return text.replace(/\[SFX:[^\]]+\]/g, '');
+    }
+
+    // ── SAVE / LOAD ──────────────────────────────────────────────────────────────
+
+    async function saveGame() {
+        try {
+            const histRes = await fetch(`${API_BASE}/api/history`);
+            const histData = await histRes.json();
+            const save = {
+                version: 1,
+                savedAt: new Date().toISOString(),
+                gameState,
+                history: histData.messages || []
+            };
+            const blob = new Blob([JSON.stringify(save, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `obsidia-${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        } catch(e) {
+            console.error('Save failed:', e);
+        }
+    }
+
+    async function loadGame(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const save = JSON.parse(text);
+
+            // Restore state
+            if (save.gameState) {
+                gameState = save.gameState;
+                updateUI();
+            }
+
+            // Clear and re-render history
+            const scroll = document.getElementById('narrative-scroll');
+            scroll.innerHTML = '';
+            const style = document.createElement('style');
+            style.innerHTML = '.message { animation: none !important; opacity: 1 !important; transform: none !important; }';
+            document.head.appendChild(style);
+            for (let msg of (save.history || [])) {
+                renderMessage(msg);
+            }
+            style.remove();
+            scroll.scrollTop = scroll.scrollHeight;
+
+            // Reset file input so same file can be loaded again
+            event.target.value = '';
+        } catch(e) {
+            console.error('Load failed:', e);
+        }
+    }
+
+    // ── TTS ENGINE ───────────────────────────────────────────────────────────────
+
+    let ttsEnabled = false;
+    let ttsSpeaking = false;
+    const ttsQueue = [];
+
+    // ── NO-IMAGES TOGGLE ────────────────────────────────────────────────────────
+    let imagesDisabled = false;
+
+    function toggleImages() {
+        imagesDisabled = !imagesDisabled;
+        const btn = document.getElementById('img-toggle');
+        const visualizer = document.getElementById('visualizer');
+        if (imagesDisabled) {
+            btn.classList.add('active');
+            btn.innerHTML = '<span id="img-icon">●</span> ON';
+            visualizer.style.height = '0%';
+            visualizer.style.borderBottom = 'none';
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = '<span id="img-icon">○</span> OFF';
+            visualizer.style.height = '';
+            visualizer.style.borderBottom = '';
+        }
+    }
+
+    function toggleTTS() {
+        ttsEnabled = !ttsEnabled;
+        const btn = document.getElementById('tts-toggle');
+        const icon = document.getElementById('tts-icon');
+        if (ttsEnabled) {
+            btn.classList.add('active');
+            icon.textContent = '●';
+            btn.innerHTML = '<span id="tts-icon">●</span> ON';
+        } else {
+            btn.classList.remove('active');
+            btn.innerHTML = '<span id="tts-icon">○</span> OFF';
+            // Stop any current speech and clear queue
+            window.speechSynthesis.cancel();
+            ttsQueue.length = 0;
+            ttsSpeaking = false;
+            document.getElementById('tts-speaking').style.display = 'none';
+        }
+    }
+
+    function stripForSpeech(text) {
+        // Remove HTML tags, signal divs, and leftover brackets
+        return text
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\[[^\]]+\]/g, '')
+            .replace(/[●○⬡▶]/g, '')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function ttsSpeak(rawText) {
+        if (!ttsEnabled) return;
+        const cleaned = stripForSpeech(rawText);
+        if (!cleaned) return;
+        ttsQueue.push(cleaned);
+        if (!ttsSpeaking) processTTSQueue();
+    }
+
+    function processTTSQueue() {
+        if (ttsQueue.length === 0) {
+            ttsSpeaking = false;
+            document.getElementById('tts-speaking').style.display = 'none';
+            return;
+        }
+        ttsSpeaking = true;
+        document.getElementById('tts-speaking').style.display = 'flex';
+
+        const text = ttsQueue.shift();
+        const utterance = new SpeechSynthesisUtterance(text);
+
+        // Pick a voice — prefer a deeper/slower one for atmosphere
+        const voices = window.speechSynthesis.getVoices();
+        const preferred = voices.find(v => /daniel|alex|fred|google uk english male/i.test(v.name))
+                       || voices.find(v => v.lang === 'en-GB')
+                       || voices[0];
+        if (preferred) utterance.voice = preferred;
+        utterance.rate = 0.88;
+        utterance.pitch = 0.9;
+        utterance.volume = 1.0;
+
+        utterance.onend = () => processTTSQueue();
+        utterance.onerror = () => processTTSQueue();
+
+        window.speechSynthesis.speak(utterance);
+    }
+
+    // Voices load async on some browsers — pre-load them
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+
+    // Allow Enter key to submit (Shift+Enter for new line)
+    document.getElementById('ren-input').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            submitTurn();
+        }
+    });
+
+function openModal() {
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-img');
+    const sceneImg = document.getElementById('scene-image');
+    
+    modal.style.display = "block";
+    modalImg.src = sceneImg.src; 
+}
+
+function closeModal() {
+    document.getElementById('image-modal').style.display = "none";
+}
+
+</script>
+
+<div id="image-modal" class="modal" onclick="closeModal()">
+    <span class="close-modal">&times;</span>
+    <img class="modal-content" id="modal-img">
+</div>
+
+</body>
+</html>
