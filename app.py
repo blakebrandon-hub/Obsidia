@@ -219,7 +219,6 @@ Only emit tags for values that changed. Always use the same format. All state ta
         full_prompt = SYSTEM_OBSIDIA_P1 + VISUAL_RECORDS_SECTION + SYSTEM_OBSIDIA_P2
     else:
         full_prompt = SYSTEM_OBSIDIA_P1 + SYSTEM_OBSIDIA_P2
-    print(full_prompt)
     return full_prompt
 
 SUMMARIZE_THRESHOLD = 12  # Summarize when this many unsummarized messages accumulate
