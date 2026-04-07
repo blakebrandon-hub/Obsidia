@@ -420,7 +420,7 @@ def handle_narrator_turn(action_text: str, character: str) -> list:
 @app.route('/api/action', methods=['POST'])
 def action():
     data = request.json
-    action_text, character = data.get('text'), data.get('character', 'Blake')
+    action_text, character = data.get('text'), data.get('character', 'Ren')
     messages = [{'type': 'action', 'character': character, 'text': action_text}]
     add_message('action', character, action_text)
 
@@ -432,7 +432,7 @@ def action():
 @app.route('/api/dialog', methods=['POST'])
 def dialog():
     data = request.json
-    dialog_text, character = data.get('text'), data.get('character', 'Blake')
+    dialog_text, character = data.get('text'), data.get('character', 'Ren')
     messages = [{'type': 'dialog', 'character': character, 'text': dialog_text}]
     add_message('dialog', character, dialog_text)
 
