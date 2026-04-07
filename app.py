@@ -20,8 +20,8 @@ CORS(app)
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-GEMINI_MODEL = 'gemini-3-flash-preview'  # gemini-3-flash-preview
-PAINTER_MODEL = 'gemini-3.1-flash-image-preview' # imagen-4.0-fast-generate-001
+GEMINI_MODEL = 'gemini-3-flash-preview'
+PAINTER_MODEL = 'imagen-4.0-fast-generate-001'
 google_key = ''
 gemini_client = genai.Client(api_key=google_key)
 
