@@ -21,16 +21,20 @@ CORS(app)
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-GEMINI_MODEL = 'gemini-3-flash-preview'
-PAINTER_MODEL = 'imagen-4.0-fast-generate-001' 
+GEMINI_MODEL = 'gemini-3-flash-preview' # free tier
+PAINTER_MODEL = 'imagen-4.0-fast-generate-001' # requires paid tier
 gemini_key = os.environ.get("GEMINI_API_KEY")
-gemini_client = genai.Client(api_key=gemini_key)
+gemini_client = genai.Client(api_key=google_key)
+
+USE_IMAGES = True
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NARRATOR PROMPT (Obsidia)
 # ─────────────────────────────────────────────────────────────────────────────
 
-SYSTEM_OBSIDIA = """
+def build_system_prompt():
+
+    SYSTEM_OBSIDIA_P1 = f"""
 # Obsidia System Prompt
 
 You are the narrator of a 300-year terraforming mission.
@@ -124,7 +128,7 @@ Water cycles. Weather systems that exist without Ren's intervention. The planet 
 ## STARTING EVENT
 Ren is landing in his ship for the first time.
 
-[GENERATE_IMAGE: <detailed, cinematic scene description for the image generator>]
+{f'[GENERATE_IMAGE: {"detailed, cinematic scene description for the image generator"}]' if USE_IMAGES else ''}
 
 ## SPECIAL MECHANICS
 
@@ -168,19 +172,23 @@ You may freely compress time when appropriate.
 
 Fifteen years pass in disciplined routine. The canyon that was rust-red now shows the first green — primitive algae colonies claiming the moisture-rich zones.
 Ren has watched this transformation frame by frame, but seeing it compressed into memory makes it feel miraculous.
+"""
 
+    VISUAL_RECORDS_SECTION = f"""
 ### VISUAL RECORDS
 If the current moment is or majorly significant, you may generate an image. Place this tag on its own line before the state tags:
 
-[GENERATE_IMAGE: <detailed, cinematic scene description for the image generator>]
+[GENERATE_IMAGE: "detailed, cinematic scene description for the image generator"]
 
 **Mandatory Image Constraints:**
 
 **Ren:** An android. Adult sized. No humanoid features. Exposed hydraulic pistons, matte composite plating, sensor arrays instead of eyes. No helmets, no fabric clothing. Scale should feel small against the landscape.
 **Bloop:** A six-legged utility robot, roughly dog-sized. Round sensor cluster for a face. Scuffed, utilitarian plating. Include Bloop when present in the scene — never anthropomorphize, never cute.
 **The Tech:** All machinery looks bolted-in, heavy, utilitarian. No contemporary Earth vehicles — use "tracked heavy-lift platforms" or "hexapedal cargo walkers" if transport is needed.
-**Style:** High-contrast, cinematic. Desolate or alive depending on stage. Always vast.
+**Style:** High-contrast, cinematic. Desolate or alive depending on stage. Always vast.\n"""
 
+
+    SYSTEM_OBSIDIA_P2 = """
 ### SOUND DESIGN
 **[SFX]** tags represent witnessed energy.
 - Emit only when event produces distinct audible footprint.
@@ -204,7 +212,15 @@ Example:
 [SIGNAL: The moisture sensors at the Crater\'s edge have been drifting for three days.]
 
 Only emit tags for values that changed. Always use the same format. All state tag values must be whole numbers. No decimals.
-"""
+    """
+
+    full_prompt = ''
+    if USE_IMAGES:
+        full_prompt = SYSTEM_OBSIDIA_P1 + VISUAL_RECORDS_SECTION + SYSTEM_OBSIDIA_P2
+    else:
+        full_prompt = SYSTEM_OBSIDIA_P1 + SYSTEM_OBSIDIA_P2
+    print(full_prompt)
+    return full_prompt
 
 SUMMARIZE_THRESHOLD = 12  # Summarize when this many unsummarized messages accumulate
 
@@ -217,7 +233,7 @@ how the planet responded, and any significant state changes.
 
 Be precise. Be brief. 2-4 sentences. No interpretation, no embellishment.
 Write in past tense, third person. Do not include tag syntax in your summary.
-"""
+    """
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -279,6 +295,7 @@ def get_narrator_response(action_text: str, conversation_history: list, characte
     parts.append('Narrate what happens next.')
 
     prompt = '\n\n'.join(parts)
+    SYSTEM_OBSIDIA = build_system_prompt()
     return handle_gemini(SYSTEM_OBSIDIA, prompt)
 
 def parse_and_save_state(narrator_text: str):
