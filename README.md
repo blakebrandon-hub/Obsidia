@@ -56,35 +56,6 @@ The narrator's tone and Bloop's behavior evolve automatically as the planet chan
 
 **SIGNAL** — Each narrator response includes a `[SIGNAL]` tag: a single quiet observation from the environment. Rendered as a highlighted aside in the scroll.
 
----
-
-## Stack
-
-| Layer | Technology |
-|---|---|
-| Backend | Python / Flask |
-| AI Narrator | Google Gemini (`gemini-3-flash-preview`) |
-| Image Generation | Google Imagen (`imagen-4.0-fast-generate-001`) |
-| Data Storage | Local JSON file (`obsidia_data.json`) |
-| Image Storage | Local filesystem (`static/photos/`) |
-| Frontend | Vanilla HTML/CSS/JS |
-| Audio | Tone.js (procedural SFX), Web Speech API (TTS) |
-| Fonts | Cinzel, Space Mono (Google Fonts) |
-
----
-
-## Project Structure
-
-```
-├── app.py                  # Flask backend, API routes, LLM logic
-├── json_store.py           # Local JSON file reads/writes (replaces Supabase)
-├── obsidia_data.json       # Auto-created on first run; holds all game data
-└── templates/
-    └── index.html          # Frontend (single-file UI)
-```
-
----
-
 ## Setup
 
 ### 1. Install dependencies
@@ -150,6 +121,35 @@ The left sidebar tracks terraforming progress in real time. The visualizer panel
 | **No Images** | Disables the visualizer and skips image rendering. Does not prevent the backend from generating images — it only suppresses display on the client. |
 | **Save Mission Log** | Downloads the full save as a `.json` file |
 | **Load Mission Log** | Restores a previously saved `.json` file, replacing current game state |
+
+---
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python / Flask |
+| AI Narrator | Google Gemini (`gemini-3-flash-preview`) |
+| Image Generation | Google Imagen (`imagen-4.0-fast-generate-001`) |
+| Data Storage | Local JSON file (`obsidia_data.json`) |
+| Image Storage | Local filesystem (`static/photos/`) |
+| Frontend | Vanilla HTML/CSS/JS |
+| Audio | Tone.js (procedural SFX), Web Speech API (TTS) |
+| Fonts | Cinzel, Space Mono (Google Fonts) |
+
+---
+
+## Project Structure
+
+```
+├── app.py                  # Flask backend, API routes, LLM logic
+├── json_store.py           # Local JSON file reads/writes (replaces Supabase)
+├── obsidia_data.json       # Auto-created on first run; holds all game data
+└── templates/
+    └── index.html          # Frontend (single-file UI)
+```
 
 ---
 
