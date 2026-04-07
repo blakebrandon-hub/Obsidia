@@ -23,9 +23,8 @@ CORS(app)
 
 GEMINI_MODEL = 'gemini-3.1-flash-lite-preview' # free tier
 PAINTER_MODEL = 'imagen-4.0-fast-generate-001' # requires paid tier
-google_key = 'AIzaSyDpb_NSbogP2jMXq8NZfOgcpHePcD8sgdU'
-#gemini_key = os.environ.get("GEMINI_API_KEY")
-gemini_client = genai.Client(api_key=google_key)
+gemini_key = os.environ.get("GEMINI_API_KEY")
+gemini_client = genai.Client(api_key=gemini_key)
 
 USE_IMAGES = False
 
