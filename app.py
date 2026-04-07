@@ -21,12 +21,12 @@ CORS(app)
 # CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 
-GEMINI_MODEL = 'gemini-3-flash-preview' # free tier
+GEMINI_MODEL = 'gemini-3.1-flash-lite-preview' # free tier
 PAINTER_MODEL = 'imagen-4.0-fast-generate-001' # requires paid tier
 gemini_key = os.environ.get("GEMINI_API_KEY")
-gemini_client = genai.Client(api_key=gemini_key)
+gemini_client = genai.Client(api_key=gemini)key)
 
-USE_IMAGES = True
+USE_IMAGES = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NARRATOR PROMPT (Obsidia)
@@ -410,17 +410,19 @@ def maybe_summarize():
         save_summary(summary_text, covers_up_to)
         print(f"[Archivist] Summarized {len(rows)} messages up to id {covers_up_to}.")
 
-def handle_narrator_turn(action_text: str, character: str) -> list:
+def handle_narrator_turn(action_text: str, character: str, msg_type: str, raw_text: str) -> list:
     """Consolidated logic to handle a narrator sequence, returning a list of events."""
     events = []
     history = get_conversation_history(limit=8)
     narrator_response = get_narrator_response(action_text, history, character)
     
-    # If the LLM itself failed, return an error event immediately.
+    # If the LLM itself failed, return an error event without saving anything.
     if narrator_response.startswith("[SYSTEM_ERROR:"):
         events.append({'type': 'system-error', 'character': 'Narrator Core', 'text': narrator_response})
         return events
 
+    # Only persist the player's message now that we know the LLM succeeded.
+    add_message(msg_type, character, raw_text)
     add_message('narrator', 'Obsidia', narrator_response)
     events.append({'type': 'narrator', 'character': 'Obsidia', 'text': narrator_response})
     
@@ -439,9 +441,8 @@ def action():
     data = request.json
     action_text, character = data.get('text'), data.get('character', 'Blake')
     messages = [{'type': 'action', 'character': character, 'text': action_text}]
-    add_message('action', character, action_text)
 
-    narrator_events = handle_narrator_turn(action_text, character)
+    narrator_events = handle_narrator_turn(action_text, character, 'action', action_text)
     messages.extend(narrator_events)
 
     return jsonify({'messages': messages})
@@ -451,9 +452,8 @@ def dialog():
     data = request.json
     dialog_text, character = data.get('text'), data.get('character', 'Blake')
     messages = [{'type': 'dialog', 'character': character, 'text': dialog_text}]
-    add_message('dialog', character, dialog_text)
 
-    narrator_events = handle_narrator_turn(f'Blake said: "{dialog_text}"', character)
+    narrator_events = handle_narrator_turn(f'Blake said: "{dialog_text}"', character, 'dialog', dialog_text)
     messages.extend(narrator_events)
 
     return jsonify({'messages': messages})
