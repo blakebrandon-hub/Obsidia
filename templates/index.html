@@ -869,8 +869,10 @@ async function loadHistory() {
     // ── NO-IMAGES TOGGLE ────────────────────────────────────────────────────────
     let imagesDisabled = false;
 
-    function toggleImages() {
-        imagesDisabled = !imagesDisabled;
+    async function toggleImages() {
+        const res = await fetch(`${API_BASE}/api/toggle_images`, { method: 'POST' });
+        const data = await res.json();
+        imagesDisabled = !data.use_images;
         const btn = document.getElementById('img-toggle');
         const visualizer = document.getElementById('visualizer');
         if (imagesDisabled) {
