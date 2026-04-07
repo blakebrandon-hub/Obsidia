@@ -23,8 +23,8 @@ CORS(app)
 
 GEMINI_MODEL = 'gemini-3-flash-preview'
 PAINTER_MODEL = 'imagen-4.0-fast-generate-001' 
-google_key = ''
-gemini_client = genai.Client(api_key=google_key)
+gemini_key = os.environ.get("GEMINI_API_KEY")
+gemini_client = genai.Client(api_key=gemini_key)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NARRATOR PROMPT (Obsidia)
