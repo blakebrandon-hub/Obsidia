@@ -23,8 +23,9 @@ CORS(app)
 
 GEMINI_MODEL = 'gemini-3.1-flash-lite-preview' # free tier
 PAINTER_MODEL = 'imagen-4.0-fast-generate-001' # requires paid tier
-gemini_key = os.environ.get("GEMINI_API_KEY")
-gemini_client = genai.Client(api_key=gemini_key)
+google_key = 'AIzaSyDpb_NSbogP2jMXq8NZfOgcpHePcD8sgdU'
+#gemini_key = os.environ.get("GEMINI_API_KEY")
+gemini_client = genai.Client(api_key=google_key)
 
 USE_IMAGES = False
 
@@ -520,7 +521,8 @@ def load_route():
 
 @app.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
+    api_base = os.environ.get('API_BASE', 'http://127.0.0.1:8080')
+    return render_template('index.html', api_base=api_base)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
