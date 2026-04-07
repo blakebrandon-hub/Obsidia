@@ -520,8 +520,7 @@ def load_route():
 
 @app.route('/', methods=['GET'])
 def index():
-    api_base = os.environ.get('API_BASE', 'http://127.0.0.1:8080')
-    return render_template('index.html', api_base=api_base)
+    return render_template('index.html')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
