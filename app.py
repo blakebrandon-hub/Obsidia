@@ -6,11 +6,12 @@ from google import genai
 from google.genai import types
 from google.api_core import exceptions as google_exceptions
 
-from supabase_client import (
+from json_store import (
     add_message, get_conversation_history,
     get_game_state, save_game_state, upload_photo_to_storage,
     get_oldest_unsummarized, count_unsummarized, save_summary,
-    get_recent_summaries, get_oldest_live_message_id
+    get_recent_summaries, get_oldest_live_message_id,
+    export_full_save, import_full_save
 )
 
 app = Flask(__name__)
@@ -21,7 +22,7 @@ CORS(app)
 # ─────────────────────────────────────────────────────────────────────────────
 
 GEMINI_MODEL = 'gemini-3-flash-preview'
-PAINTER_MODEL = 'imagen-4.0-fast-generate-001'
+PAINTER_MODEL = 'imagen-4.0-fast-generate-001' 
 google_key = ''
 gemini_client = genai.Client(api_key=google_key)
 
@@ -420,7 +421,7 @@ def handle_narrator_turn(action_text: str, character: str) -> list:
 @app.route('/api/action', methods=['POST'])
 def action():
     data = request.json
-    action_text, character = data.get('text'), data.get('character', 'Ren')
+    action_text, character = data.get('text'), data.get('character', 'Blake')
     messages = [{'type': 'action', 'character': character, 'text': action_text}]
     add_message('action', character, action_text)
 
@@ -432,7 +433,7 @@ def action():
 @app.route('/api/dialog', methods=['POST'])
 def dialog():
     data = request.json
-    dialog_text, character = data.get('text'), data.get('character', 'Ren')
+    dialog_text, character = data.get('text'), data.get('character', 'Blake')
     messages = [{'type': 'dialog', 'character': character, 'text': dialog_text}]
     add_message('dialog', character, dialog_text)
 
@@ -473,6 +474,33 @@ def get_context():
         'context': build_context(trigger),
         'game_state': get_game_state()
     })
+
+@app.route('/api/save', methods=['GET'])
+def save_route():
+    """Return the full save data as a JSON download."""
+    from flask import Response
+    import json as _json
+    data = export_full_save()
+    return Response(
+        _json.dumps(data, indent=2),
+        mimetype='application/json',
+        headers={'Content-Disposition': 'attachment; filename=obsidia-save.json'}
+    )
+
+@app.route('/api/load', methods=['POST'])
+def load_route():
+    """Accept a JSON save file and restore it as the active game."""
+    import json as _json
+    try:
+        # Accept either multipart file upload or raw JSON body
+        if request.files.get('file'):
+            data = _json.load(request.files['file'])
+        else:
+            data = request.get_json(force=True)
+        import_full_save(data)
+        return jsonify({'status': 'ok'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
 
 @app.route('/', methods=['GET'])
 def index():
