@@ -93,13 +93,10 @@ The narrator's tone and Bloop's behavior evolve automatically as the planet chan
 pip install flask flask-cors google-genai
 ```
 
-### 2. Configure API keys
+### 2. Set your API key
 
-Open `app.py` and set your credentials directly, or move them to environment variables:
-
-```python
-# app.py
-google_key = 'YOUR_GOOGLE_API_KEY'
+```bash
+export GEMINI_API_KEY='your_key_here'
 ```
 
 ### 3. Run
