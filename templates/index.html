@@ -348,6 +348,9 @@
     font-weight: bold;
     cursor: pointer;
 }
+
+.message:empty { display: none; }
+
 </style>
 </head>
 <body>
@@ -416,8 +419,6 @@
         <div id="narrative-scroll">
             <div class="message obsidia" style="text-align: center; color: var(--accent-obsidia); font-size: 24px;">
                 TALES OF OBSIDIA
-            </div>
-            <div class="message obsidia">
             </div>
         </div>
 
@@ -532,7 +533,7 @@ async function loadHistory() {
     // /api/state after each turn via syncStateFromServer().
     function parseStateTags(text) {
         // Extract and render SIGNAL separately (keeps narrative flavor visible)
-        text = text.replace(/\[SIGNAL:\s*(.+?)\]/g, '<div class="signal-tag">⬡ $1</div>');
+        text = text.replace(/\n*\[SIGNAL:\s*(.+?)\]\n*/g, '<div class="signal-tag">⬡ $1</div>');
 
         // Remove all remaining state tags AND their trailing line breaks
         return text.replace(/\[[A-Z_]+:.*?\]\n*/g, '').trim();
