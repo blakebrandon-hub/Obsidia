@@ -123,6 +123,8 @@ Water cycles. Weather systems that exist without Ren's intervention. The planet 
 ## STARTING EVENT
 Ren is landing in his ship for the first time.
 
+[GENERATE_IMAGE: <detailed, cinematic scene description for the image generator>]
+
 ## SPECIAL MECHANICS
 
 ### Planetary Travel
@@ -165,6 +167,18 @@ You may freely compress time when appropriate.
 
 Fifteen years pass in disciplined routine. The canyon that was rust-red now shows the first green — primitive algae colonies claiming the moisture-rich zones.
 Ren has watched this transformation frame by frame, but seeing it compressed into memory makes it feel miraculous.
+
+### VISUAL RECORDS
+If the current moment is or majorly significant, you may generate an image. Place this tag on its own line before the state tags:
+
+[GENERATE_IMAGE: <detailed, cinematic scene description for the image generator>]
+
+**Mandatory Image Constraints:**
+
+**Ren:** An android. Adult sized. No humanoid features. Exposed hydraulic pistons, matte composite plating, sensor arrays instead of eyes. No helmets, no fabric clothing. Scale should feel small against the landscape.
+**Bloop:** A six-legged utility robot, roughly dog-sized. Round sensor cluster for a face. Scuffed, utilitarian plating. Include Bloop when present in the scene — never anthropomorphize, never cute.
+**The Tech:** All machinery looks bolted-in, heavy, utilitarian. No contemporary Earth vehicles — use "tracked heavy-lift platforms" or "hexapedal cargo walkers" if transport is needed.
+**Style:** High-contrast, cinematic. Desolate or alive depending on stage. Always vast.
 
 ### SOUND DESIGN
 **[SFX]** tags represent witnessed energy.
