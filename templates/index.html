@@ -130,16 +130,6 @@
         border-left: 2px solid rgba(232, 201, 122, 0.4);
         padding: 4px 10px;
     }
-    .sofia-action {
-        color: var(--accent-sofia);
-        border-left: 2px solid rgba(255, 153, 51, 0.4);
-        padding: 4px 10px;
-    }
-    .sofia-dialog {
-        color: var(--accent-speak);
-        border-left: 2px solid rgba(232, 201, 122, 0.4);
-        padding: 4px 10px;
-    }
     .system-status {
         color: var(--text-muted);
         font-size: 11px;
@@ -275,6 +265,32 @@
     #img-toggle { border-color: rgba(77, 166, 255, 0.4); color: var(--text-muted); }
     #img-toggle.active { border-color: #ff4444; color: #ff6666; box-shadow: 0 0 8px rgba(255, 60, 60, 0.2); }
 
+    /* Save / Load buttons */
+    .save-load-group { display: flex; flex-direction: column; gap: 8px; margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(179, 102, 255, 0.2); }
+    .save-load-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        background: transparent;
+        border: 1px solid rgba(179, 102, 255, 0.3);
+        color: var(--text-muted);
+        font-family: 'Space Mono', monospace;
+        font-size: 10px;
+        letter-spacing: 1px;
+        padding: 6px 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .save-load-btn:hover {
+        border-color: var(--accent-obsidia);
+        color: var(--accent-obsidia);
+        box-shadow: 0 0 8px rgba(179, 102, 255, 0.2);
+    }
+    #btn-load-file { display: none; }
+
     /* Modal & View Full Button */
 .visual-action-btn {
     position: absolute;
@@ -362,7 +378,7 @@
     <div id="sfx-indicator"><div class="sfx-dot"></div>▶ SFX</div>
 
     <div class="stat-group">
-        <h3>AUDIO</h3>
+        <h3>CONFIG</h3>
         <div class="tts-row">
             <span class="tts-label">Narration Voice</span>
             <button id="tts-toggle" class="tts-btn" onclick="toggleTTS()" title="Toggle narration TTS">
@@ -378,6 +394,16 @@
                 <span id="img-icon">○</span> OFF
             </button>
         </div>
+    </div>
+
+    <div class="save-load-group">
+        <button class="save-load-btn" onclick="saveGame()" title="Download save file">
+            ↓ SAVE MISSION LOG
+        </button>
+        <button class="save-load-btn" onclick="document.getElementById('btn-load-file').click()" title="Load save file">
+            ↑ LOAD MISSION LOG
+        </button>
+        <input type="file" id="btn-load-file" accept=".json" onchange="loadGame(event)">
     </div>
 </div>
     <div id="main-view">
@@ -556,7 +582,7 @@ async function loadHistory() {
             msgDiv.className = 'message obsidia';
             const cleaned = parseSFXTags(msg.text);
             const withTags = parseStateTags(cleaned);
-            const formatted = withTags.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
+            let formatted = withTags.replace(/\n\n/g, '<br><br>').replace(/\n/g, '<br>');
             msgDiv.innerHTML = formatted;
             ttsSpeak(withTags);
         } 
@@ -579,15 +605,19 @@ async function loadHistory() {
         }
         else if (msg.type === 'photo') {
             msgDiv.className = 'sys-tag system-status';
-            //msgDiv.innerText = `[PAINTER_API]: Processing visual request from ${msg.character}...`;
             msgDiv.style.display = 'block';
             if (msg.image_url) triggerImageGeneration(msg.image_url, msg.text);
         }
-        else {
-            // Meta tags (remember, think, reflect)
+        else if (msg.type === 'system-error') {
+            // Suppress image-generation errors when images are turned off
+            if (imagesDisabled) return;
             msgDiv.className = 'sys-tag system-status';
-            msgDiv.innerText = `[SYSTEM LOG]: ${msg.type} executed by ${msg.character}`;
+            msgDiv.innerText = `[ERROR]: ${msg.text}`;
             msgDiv.style.display = 'block';
+        }
+        else {
+            // Unknown meta tags — silently skip
+            return;
         }
 
         scroll.appendChild(msgDiv);
@@ -780,15 +810,9 @@ async function loadHistory() {
 
     async function saveGame() {
         try {
-            const histRes = await fetch(`${API_BASE}/api/history`);
-            const histData = await histRes.json();
-            const save = {
-                version: 1,
-                savedAt: new Date().toISOString(),
-                gameState,
-                history: histData.messages || []
-            };
-            const blob = new Blob([JSON.stringify(save, null, 2)], { type: 'application/json' });
+            const res = await fetch(`${API_BASE}/api/save`);
+            if (!res.ok) throw new Error('Save request failed');
+            const blob = await res.blob();
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
@@ -804,14 +828,17 @@ async function loadHistory() {
         const file = event.target.files[0];
         if (!file) return;
         try {
-            const text = await file.text();
-            const save = JSON.parse(text);
+            // Send the file to the server to restore the full save
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await fetch(`${API_BASE}/api/load`, { method: 'POST', body: formData });
+            if (!res.ok) throw new Error('Load request failed');
 
-            // Restore state
-            if (save.gameState) {
-                gameState = save.gameState;
-                updateUI();
-            }
+            // Reload game state and history from server
+            await loadGameState();
+
+            const histRes = await fetch(`${API_BASE}/api/history`);
+            const histData = await histRes.json();
 
             // Clear and re-render history
             const scroll = document.getElementById('narrative-scroll');
@@ -819,7 +846,7 @@ async function loadHistory() {
             const style = document.createElement('style');
             style.innerHTML = '.message { animation: none !important; opacity: 1 !important; transform: none !important; }';
             document.head.appendChild(style);
-            for (let msg of (save.history || [])) {
+            for (let msg of (histData.messages || [])) {
                 renderMessage(msg);
             }
             style.remove();
