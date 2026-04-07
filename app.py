@@ -26,7 +26,13 @@ PAINTER_MODEL = 'imagen-4.0-fast-generate-001' # requires paid tier
 gemini_key = os.environ.get("GEMINI_API_KEY")
 gemini_client = genai.Client(api_key=gemini_key)
 
-USE_IMAGES = False
+USE_IMAGES = True
+
+@app.route('/api/toggle_images', methods=['POST'])
+def toggle_images():
+    global USE_IMAGES
+    USE_IMAGES = not USE_IMAGES
+    return jsonify({'use_images': USE_IMAGES})
 
 # ─────────────────────────────────────────────────────────────────────────────
 # NARRATOR PROMPT (Obsidia)
