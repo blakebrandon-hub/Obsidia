@@ -1,4 +1,4 @@
-# Obsidia
+# Obsidia [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fblakebrandon-hub%2FObsidia&env=GEMINI_API_KEY&envDescription=GEMINI_API_KEY)
 
 A slow, atmospheric text-based game about terraforming a dead planet over 300 years. You play as Ren, an android left alone with a small companion robot named Bloop, a hub full of machinery, and three centuries of work ahead of you.
 
