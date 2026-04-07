@@ -82,24 +82,6 @@ Then open `http://localhost:8080` in your browser.
 
 ---
 
-## Data Storage
-
-All game data is persisted locally in `obsidia_data.json`, stored next to the server. The file is created automatically if it doesn't exist. Its structure:
-
-```json
-{
-  "messages":  [],
-  "game_state": { "terra_a": 2, "terra_t": 14, ... },
-  "summaries":  []
-}
-```
-
-Generated scene images are saved as PNG files under `static/photos/` and served by Flask's static file handler.
-
-Use the **Save Mission Log** and **Load Mission Log** buttons in the sidebar to export and import the full save file as a portable `.json` download.
-
----
-
 ## How to Play
 
 Type an action in the console at the bottom and press **Transmit** (or Enter). Ren will do it. Obsidia will describe what happens.
@@ -123,6 +105,22 @@ The left sidebar tracks terraforming progress in real time. The visualizer panel
 | **Load Mission Log** | Restores a previously saved `.json` file, replacing current game state |
 
 ---
+
+## Data Storage
+
+All game data is persisted locally in `obsidia_data.json`, stored next to the server. The file is created automatically if it doesn't exist. Its structure:
+
+```json
+{
+  "messages":  [],
+  "game_state": { "terra_a": 2, "terra_t": 14, ... },
+  "summaries":  []
+}
+```
+
+Generated scene images are saved as PNG files under `static/photos/` and served by Flask's static file handler.
+
+Use the **Save Mission Log** and **Load Mission Log** buttons in the sidebar to export and import the full save file as a portable `.json` download.
 
 ---
 
