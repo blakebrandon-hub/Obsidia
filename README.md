@@ -65,8 +65,8 @@ The narrator's tone and Bloop's behavior evolve automatically as the planet chan
 | Backend | Python / Flask |
 | AI Narrator | Google Gemini (`gemini-3-flash-preview`) |
 | Image Generation | Google Imagen (`imagen-4.0-fast-generate-001`) |
-| Database | Supabase (Postgres) |
-| Image Storage | Supabase Storage |
+| Data Storage | Local JSON file (`obsidia_data.json`) |
+| Image Storage | Local filesystem (`static/photos/`) |
 | Frontend | Vanilla HTML/CSS/JS |
 | Audio | Tone.js (procedural SFX), Web Speech API (TTS) |
 | Fonts | Cinzel, Space Mono (Google Fonts) |
@@ -77,7 +77,8 @@ The narrator's tone and Bloop's behavior evolve automatically as the planet chan
 
 ```
 ├── app.py                  # Flask backend, API routes, LLM logic
-├── supabase_client.py      # All Supabase reads/writes
+├── json_store.py           # Local JSON file reads/writes (replaces Supabase)
+├── obsidia_data.json       # Auto-created on first run; holds all game data
 └── templates/
     └── index.html          # Frontend (single-file UI)
 ```
@@ -89,68 +90,45 @@ The narrator's tone and Bloop's behavior evolve automatically as the planet chan
 ### 1. Install dependencies
 
 ```bash
-pip install flask flask-cors google-genai supabase
+pip install flask flask-cors google-genai
 ```
 
 ### 2. Configure API keys
 
-Open `app.py` and `supabase_client.py` and set your credentials directly, or move them to environment variables:
+Open `app.py` and set your credentials directly, or move them to environment variables:
 
 ```python
 # app.py
 google_key = 'YOUR_GOOGLE_API_KEY'
-
-# supabase_client.py
-url = 'YOUR_SUPABASE_URL'
-key = 'YOUR_SUPABASE_ANON_KEY'
 ```
 
-### 3. Set up Supabase tables
-
-You need three tables in your Supabase project:
-
-**`obsidia`** — the unified message log
-```sql
-create table obsidia (
-  id bigint generated always as identity primary key,
-  role text,
-  content text,
-  created_at timestamptz default now()
-);
-```
-
-**`game_state`** — a single row holding all terraforming values
-```sql
-create table game_state (
-  id int primary key default 1,
-  terra_a int, terra_t int, terra_w int, terra_f int, terra_s int,
-  sys_bi int, sys_bc int,
-  rel_y int, rel_d int
-);
-
--- Insert the starting row
-insert into game_state values (1, 2, 14, 0, 0, 8, 100, 100, 0, 0);
-```
-
-**`summaries`** — rolling archivist summaries for long-context management
-```sql
-create table summaries (
-  id bigint generated always as identity primary key,
-  content text,
-  covers_up_to bigint,
-  created_at timestamptz default now()
-);
-```
-
-You also need a **Supabase Storage bucket** named `obsidia-world` with public read access for generated images.
-
-### 4. Run
+### 3. Run
 
 ```bash
 python app.py
 ```
 
+`obsidia_data.json` is created automatically on first run with default starting values. No database setup required.
+
 Then open `http://localhost:8080` in your browser.
+
+---
+
+## Data Storage
+
+All game data is persisted locally in `obsidia_data.json`, stored next to the server. The file is created automatically if it doesn't exist. Its structure:
+
+```json
+{
+  "messages":  [],
+  "game_state": { "terra_a": 2, "terra_t": 14, ... },
+  "summaries":  []
+}
+```
+
+Generated scene images are saved as PNG files under `static/photos/` and served by Flask's static file handler.
+
+Use the **Save Mission Log** and **Load Mission Log** buttons in the sidebar to export and import the full save file as a portable `.json` download.
 
 ---
 
@@ -173,6 +151,8 @@ The left sidebar tracks terraforming progress in real time. The visualizer panel
 |---|---|
 | **Narration Voice** | Enables text-to-speech for Obsidia's narration using your browser's speech engine |
 | **No Images** | Disables the visualizer and skips image rendering. Does not prevent the backend from generating images — it only suppresses display on the client. |
+| **Save Mission Log** | Downloads the full save as a `.json` file |
+| **Load Mission Log** | Restores a previously saved `.json` file, replacing current game state |
 
 ---
 
@@ -182,17 +162,19 @@ The left sidebar tracks terraforming progress in real time. The visualizer panel
 |---|---|---|
 | `/api/action` | POST | Submit an action. Returns narrator response and any image events. |
 | `/api/dialog` | POST | Submit dialogue. Treated as `Ren said: "..."` in narrator context. |
-| `/api/state` | GET | Returns current game state from Supabase. |
+| `/api/state` | GET | Returns current game state. |
 | `/api/history` | GET | Returns full conversation history (up to 100 messages). |
 | `/api/reset_state` | POST | Resets game state to initial values. Does not clear message history. |
 | `/api/archive` | POST | Manually triggers the archivist summarization pass. |
 | `/api/context` | GET | Debug route — returns the current context window and game state. |
+| `/api/save` | GET | Downloads the full `obsidia_data.json` as a save file. |
+| `/api/load` | POST | Accepts a `.json` save file and restores it as the current game state. |
 
 ---
 
 ## Game State
 
-The narrator emits structured tags at the end of each response. The backend parses these and updates Supabase. All values are whole numbers clamped 0–100 (except mission year, which increments freely).
+The narrator emits structured tags at the end of each response. The backend parses these and updates the local JSON store. All values are whole numbers clamped 0–100 (except mission year, which increments freely).
 
 | Tag | Values | Description |
 |---|---|---|
